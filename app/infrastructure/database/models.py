@@ -11,26 +11,31 @@ class EscritoDB(Base):
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     status = Column(String(50), nullable=False, default="borrador")
+    tags = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_domain(self) -> Escrito:
+        tag_list = [t.strip() for t in self.tags.split(",") if t.strip()] if self.tags else []
         return Escrito(
             id=self.id,
             title=self.title,
             content=self.content,
             status=self.status,
+            tags=tag_list,
             created_at=self.created_at,
             updated_at=self.updated_at
         )
 
     @classmethod
     def from_domain(cls, escrito: Escrito) -> "EscritoDB":
+        tag_str = ",".join(escrito.tags) if escrito.tags else None
         return cls(
             id=escrito.id,
             title=escrito.title,
             content=escrito.content,
             status=escrito.status,
+            tags=tag_str,
             created_at=escrito.created_at,
             updated_at=escrito.updated_at
         )

@@ -6,6 +6,7 @@ class Escrito:
     title: str
     content: str
     status: str  # "borrador" | "publicado"
+    tags: list[str] = field(default_factory=list)
     id: int | None = None
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)

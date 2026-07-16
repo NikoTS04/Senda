@@ -57,7 +57,8 @@ def test_create_writing(client, admin_headers):
     payload = {
         "title": "Poema de Invierno",
         "content": "El frio susurra en la noche...",
-        "status": "borrador"
+        "status": "borrador",
+        "tags": ["poesia", "invierno"]
     }
     response = client.post("/api/v1/writings/", json=payload, headers=admin_headers)
     assert response.status_code == 201
@@ -65,6 +66,7 @@ def test_create_writing(client, admin_headers):
     assert data["title"] == payload["title"]
     assert data["content"] == payload["content"]
     assert data["status"] == "borrador"
+    assert data["tags"] == ["poesia", "invierno"]
     assert "id" in data
 
 def test_get_writing(client, admin_headers):
@@ -133,12 +135,19 @@ def test_list_writings_and_feed(client, admin_headers):
     assert res_pub.json()[0]["title"] == "Publicado 1"
 
 def test_search_writings(client, admin_headers):
-    client.post("/api/v1/writings/", json={"title": "Cazador de Estrellas", "content": "...", "status": "publicado"}, headers=admin_headers)
-    client.post("/api/v1/writings/", json={"title": "Ensayo sobre la Ceguera", "content": "...", "status": "publicado"}, headers=admin_headers)
-    client.post("/api/v1/writings/", json={"title": "Borrador Secreto", "content": "Cazador...", "status": "borrador"}, headers=admin_headers)
+    client.post("/api/v1/writings/", json={"title": "Cazador de Estrellas", "content": "...", "status": "publicado", "tags": ["universo"]}, headers=admin_headers)
+    client.post("/api/v1/writings/", json={"title": "Ensayo sobre la Ceguera", "content": "...", "status": "publicado", "tags": ["literatura"]}, headers=admin_headers)
+    client.post("/api/v1/writings/", json={"title": "Borrador Secreto", "content": "Cazador...", "status": "borrador", "tags": ["universo"]}, headers=admin_headers)
 
     response = client.get("/api/v1/writings/search?q=Cazador")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
     assert data[0]["title"] == "Cazador de Estrellas"
+
+    # Search by tag
+    response_tag = client.get("/api/v1/writings/search?q=universo")
+    assert response_tag.status_code == 200
+    data_tag = response_tag.json()
+    assert len(data_tag) == 1
+    assert data_tag[0]["title"] == "Cazador de Estrellas"

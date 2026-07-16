@@ -7,15 +7,15 @@ class CreateWritingUseCase:
     def __init__(self, repo: IEscritoRepository):
         self.repo = repo
 
-    def execute(self, title: str, content: str, status: str) -> Escrito:
-        escrito = Escrito(title=title, content=content, status=status)
+    def execute(self, title: str, content: str, status: str, tags: list[str] | None = None) -> Escrito:
+        escrito = Escrito(title=title, content=content, status=status, tags=tags or [])
         return self.repo.create(escrito)
 
 class UpdateWritingUseCase:
     def __init__(self, repo: IEscritoRepository):
         self.repo = repo
 
-    def execute(self, id: int, title: str, content: str, status: str) -> Escrito:
+    def execute(self, id: int, title: str, content: str, status: str, tags: list[str] | None = None) -> Escrito:
         escrito = self.repo.get_by_id(id)
         if not escrito:
             raise EscritoNoEncontradoException(id)
@@ -23,6 +23,7 @@ class UpdateWritingUseCase:
         escrito.title = title
         escrito.content = content
         escrito.status = status
+        escrito.tags = tags or []
         escrito.updated_at = datetime.now()
         return self.repo.update(escrito)
 
