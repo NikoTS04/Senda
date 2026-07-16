@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from app.domain.models import Escrito, Usuario
+from app.domain.models import Escrito, Usuario, Comentario
 
 class IEscritoRepository(ABC):
     @abstractmethod
@@ -46,4 +46,22 @@ class IUsuarioRepository(ABC):
 
     @abstractmethod
     def update(self, usuario: Usuario) -> Usuario:
+        pass
+
+
+class IComentarioRepository(ABC):
+    @abstractmethod
+    def get_by_id(self, id: int) -> Comentario | None:
+        pass
+
+    @abstractmethod
+    def list_by_escrito(self, escrito_id: int) -> list[Comentario]:
+        pass
+
+    @abstractmethod
+    def create(self, comentario: Comentario) -> Comentario:
+        pass
+
+    @abstractmethod
+    def delete(self, id: int) -> None:
         pass

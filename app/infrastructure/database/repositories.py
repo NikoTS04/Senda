@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from app.domain.models import Escrito, Usuario
-from app.domain.repositories import IEscritoRepository, IUsuarioRepository
-from app.infrastructure.database.models import EscritoDB, UsuarioDB
+from app.domain.models import Escrito, Usuario, Comentario
+from app.domain.repositories import IEscritoRepository, IUsuarioRepository, IComentarioRepository
+from app.infrastructure.database.models import EscritoDB, UsuarioDB, ComentarioDB
 
 class SqliteEscritoRepository(IEscritoRepository):
     def __init__(self, db: Session):
@@ -104,3 +104,34 @@ class SqliteUsuarioRepository(IUsuarioRepository):
         self.db.commit()
         self.db.refresh(db_user)
         return db_user.to_domain()
+
+
+class SqliteComentarioRepository(IComentarioRepository):
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_by_id(self, id: int) -> Comentario | None:
+        db_comment = self.db.query(ComentarioDB).filter(ComentarioDB.id == id).first()
+        return db_comment.to_domain() if db_comment else None
+
+    def list_by_escrito(self, escrito_id: int) -> list[Comentario]:
+        db_comments = (
+            self.db.query(ComentarioDB)
+            .filter(ComentarioDB.escrito_id == escrito_id)
+            .order_by(ComentarioDB.created_at.asc())
+            .all()
+        )
+        return [c.to_domain() for c in db_comments]
+
+    def create(self, comentario: Comentario) -> Comentario:
+        db_comment = ComentarioDB.from_domain(comentario)
+        self.db.add(db_comment)
+        self.db.commit()
+        self.db.refresh(db_comment)
+        return db_comment.to_domain()
+
+    def delete(self, id: int) -> None:
+        db_comment = self.db.query(ComentarioDB).filter(ComentarioDB.id == id).first()
+        if db_comment:
+            self.db.delete(db_comment)
+            self.db.commit()

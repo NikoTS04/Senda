@@ -19,3 +19,14 @@ class Usuario:
     id: int | None = None
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
+
+@dataclass
+class Comentario:
+    content: str
+    escrito_id: int
+    usuario_id: int
+    rating: int | None = None
+    id: int | None = None
+    usuario_name: str | None = None
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)

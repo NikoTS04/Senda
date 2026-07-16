@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.infrastructure.database.session import Base
-from app.domain.models import Escrito, Usuario
+from app.domain.models import Escrito, Usuario, Comentario
 
 class EscritoDB(Base):
     __tablename__ = "escritos"
@@ -67,4 +68,42 @@ class UsuarioDB(Base):
             google_id=usuario.google_id,
             created_at=usuario.created_at,
             updated_at=usuario.updated_at
+        )
+
+
+class ComentarioDB(Base):
+    __tablename__ = "comentarios"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    content = Column(Text, nullable=False)
+    rating = Column(Integer, nullable=True)
+    escrito_id = Column(Integer, ForeignKey("escritos.id", ondelete="CASCADE"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    usuario = relationship("UsuarioDB")
+
+    def to_domain(self) -> Comentario:
+        return Comentario(
+            id=self.id,
+            content=self.content,
+            rating=self.rating,
+            escrito_id=self.escrito_id,
+            usuario_id=self.usuario_id,
+            usuario_name=self.usuario.name if self.usuario else None,
+            created_at=self.created_at,
+            updated_at=self.updated_at
+        )
+
+    @classmethod
+    def from_domain(cls, comentario: Comentario) -> "ComentarioDB":
+        return cls(
+            id=comentario.id,
+            content=comentario.content,
+            rating=comentario.rating,
+            escrito_id=comentario.escrito_id,
+            usuario_id=comentario.usuario_id,
+            created_at=comentario.created_at,
+            updated_at=comentario.updated_at
         )
