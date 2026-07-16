@@ -1,8 +1,12 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from app.infrastructure.database.session import get_db
-from app.infrastructure.database.repositories import SqliteEscritoRepository, SqliteUsuarioRepository
-from app.domain.repositories import IEscritoRepository, IUsuarioRepository
+from app.infrastructure.database.repositories import (
+    SqliteEscritoRepository,
+    SqliteUsuarioRepository,
+    SqliteComentarioRepository
+)
+from app.domain.repositories import IEscritoRepository, IUsuarioRepository, IComentarioRepository
 from app.use_cases.content.writings_use_cases import (
     CreateWritingUseCase,
     UpdateWritingUseCase,
@@ -14,6 +18,11 @@ from app.use_cases.content.writings_use_cases import (
 from app.use_cases.auth.auth_use_cases import (
     AuthenticateGoogleUserUseCase,
     DeveloperLoginUseCase
+)
+from app.use_cases.feedback.comments_use_cases import (
+    CreateCommentUseCase,
+    ListCommentsUseCase,
+    DeleteCommentUseCase
 )
 
 def get_escrito_repository(db: Session = Depends(get_db)) -> IEscritoRepository:
@@ -96,3 +105,23 @@ def get_current_admin(current_user: dict = Depends(get_current_user)) -> dict:
             detail="Permisos insuficientes. Requiere rol de Administrador."
         )
     return current_user
+
+def get_comment_repository(db: Session = Depends(get_db)) -> IComentarioRepository:
+    return SqliteComentarioRepository(db)
+
+def get_create_comment_use_case(
+    comment_repo: IComentarioRepository = Depends(get_comment_repository),
+    escrito_repo: IEscritoRepository = Depends(get_escrito_repository)
+) -> CreateCommentUseCase:
+    return CreateCommentUseCase(comment_repo, escrito_repo)
+
+def get_list_comments_use_case(
+    comment_repo: IComentarioRepository = Depends(get_comment_repository),
+    escrito_repo: IEscritoRepository = Depends(get_escrito_repository)
+) -> ListCommentsUseCase:
+    return ListCommentsUseCase(comment_repo, escrito_repo)
+
+def get_delete_comment_use_case(
+    comment_repo: IComentarioRepository = Depends(get_comment_repository)
+) -> DeleteCommentUseCase:
+    return DeleteCommentUseCase(comment_repo)
