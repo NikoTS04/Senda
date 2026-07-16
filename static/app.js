@@ -287,7 +287,6 @@ class SendaApp {
       `;
     }).join('');
   }
-  }
 
   // Comments logic
   renderCommentForm(writingId) {
