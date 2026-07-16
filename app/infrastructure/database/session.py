@@ -1,11 +1,19 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.infrastructure.config import settings
+import os
 
-# For SQLite, we need to allow access from multiple threads
+# For SQLite, ensure database parent directory exists and allow multithreading
 connect_args = {}
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args["check_same_thread"] = False
+    # If the URL specifies a path (e.g. sqlite:///./senda.db or sqlite:////app/data/senda.db)
+    # create the directory if it doesn't exist.
+    if settings.DATABASE_URL.startswith("sqlite:///"):
+        db_path = settings.DATABASE_URL[10:] # extract path after 'sqlite:///'
+        db_dir = os.path.dirname(db_path)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
 
 engine = create_engine(
     settings.DATABASE_URL,
