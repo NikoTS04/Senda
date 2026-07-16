@@ -162,6 +162,7 @@ class SendaApp {
     const feedContainer = document.getElementById('feed-container');
     
     if (writings.length === 0) {
+      feedContainer.className = "flex flex-col gap-6 w-full";
       feedContainer.innerHTML = `
         <div class="glass-card p-12 rounded-2xl text-center text-gray-500 border border-gray-800/40">
           <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-600"></i>
@@ -170,6 +171,14 @@ class SendaApp {
         </div>
       `;
       return;
+    }
+
+    const isSingleView = writings.length === 1;
+
+    if (isSingleView) {
+      feedContainer.className = "flex flex-col gap-6 max-w-3xl mx-auto w-full";
+    } else {
+      feedContainer.className = "grid grid-cols-1 md:grid-cols-2 gap-6 w-full";
     }
 
     feedContainer.innerHTML = writings.map(w => {
@@ -182,30 +191,72 @@ class SendaApp {
         : '';
 
       const tagsHTML = w.tags && w.tags.length > 0
-        ? w.tags.map(t => `<span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-900 border border-gray-800 text-gray-400 hover:text-blue-400 cursor-pointer" onclick="app.searchTag('${t}')">#${t}</span>`).join(' ')
+        ? w.tags.map(t => `<span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-900 border border-gray-800 text-gray-400 hover:text-blue-400 cursor-pointer" onclick="event.stopPropagation(); app.searchTag('${t}')">#${t}</span>`).join(' ')
         : '';
 
       const adminButtons = this.user && this.user.role === 'admin'
         ? `
           <div class="flex items-center gap-2">
-            <button onclick="app.editWriting(${w.id})" class="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 text-blue-400 hover:text-blue-300 transition duration-200 border border-gray-800 text-xs flex items-center gap-1">
+            <button onclick="event.stopPropagation(); app.editWriting(${w.id})" class="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 text-blue-400 hover:text-blue-300 transition duration-200 border border-gray-800 text-xs flex items-center gap-1">
               <i class="fa-solid fa-pen"></i> Editar
             </button>
-            <button onclick="app.deleteWriting(${w.id})" class="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 text-red-400 hover:text-red-300 transition duration-200 border border-gray-800 text-xs flex items-center gap-1">
+            <button onclick="event.stopPropagation(); app.deleteWriting(${w.id})" class="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 text-red-400 hover:text-red-300 transition duration-200 border border-gray-800 text-xs flex items-center gap-1">
               <i class="fa-solid fa-trash"></i> Eliminar
             </button>
           </div>
         `
         : '';
 
+      const contentClass = isSingleView 
+        ? "markdown-body text-gray-300 text-sm sm:text-base prose prose-invert max-w-none"
+        : "markdown-body text-gray-300 text-sm sm:text-base prose prose-invert max-w-none max-h-40 overflow-hidden relative pb-8";
+
+      const fadeOverlay = isSingleView
+        ? ""
+        : `<div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#161b26] to-transparent pointer-events-none"></div>`;
+
+      const readMoreBtn = isSingleView
+        ? ""
+        : `
+          <div class="mt-4 flex items-center justify-between border-t border-gray-800/40 pt-4">
+            <button onclick="app.viewSingleWriting(${w.id})" class="text-sm font-semibold text-blue-400 hover:text-blue-300 transition flex items-center gap-1">
+              Leer escrito completo <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+          </div>
+        `;
+
+      const commentsBlock = isSingleView
+        ? `
+          <div class="bg-gray-950/20 p-6 sm:p-8 flex flex-col gap-5 border-t border-gray-800/40">
+            <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-1">
+              <i class="fa-regular fa-comments text-blue-500"></i>
+              Comentarios y Valoraciones
+            </h4>
+
+            <div id="comments-list-${w.id}" class="flex flex-col gap-4">
+              <button onclick="app.loadComments(${w.id})" class="text-xs text-blue-400 hover:text-blue-300 transition text-left self-start flex items-center gap-1.5">
+                <i class="fa-solid fa-arrow-down-short-wide"></i> Mostrar comentarios...
+              </button>
+            </div>
+
+            ${this.renderCommentForm(w.id)}
+          </div>
+        `
+        : `
+          <div class="bg-gray-950/20 p-4 border-t border-gray-800/40 flex items-center justify-between text-xs text-gray-500">
+            <span class="hover:text-blue-400 flex items-center gap-1.5" onclick="app.viewSingleWriting(${w.id})">
+              <i class="fa-regular fa-comments"></i> Ver comentarios y valoraciones
+            </span>
+          </div>
+        `;
+
       return `
-        <article class="glass-card rounded-2xl border border-gray-800/50 hover:border-gray-700/60 transition duration-300 overflow-hidden flex flex-col">
-          <!-- Content Body -->
-          <div class="p-6 sm:p-8 flex flex-col gap-4 border-b border-gray-800/40">
+        <article onclick="if(!${isSingleView}) app.viewSingleWriting(${w.id})" class="glass-card rounded-2xl border border-gray-800/50 hover:border-gray-700/60 transition duration-300 overflow-hidden flex flex-col cursor-pointer hover:-translate-y-0.5 transform">
+          <div class="p-6 sm:p-8 flex-1 flex flex-col gap-4">
             <div class="flex items-start justify-between gap-4">
               <div class="flex flex-col gap-1.5">
                 <div class="flex items-center gap-2">
-                  <h3 class="text-xl sm:text-2xl font-bold tracking-tight text-gray-100 hover:text-blue-400 transition cursor-pointer" onclick="app.viewSingleWriting(${w.id})">
+                  <h3 class="text-xl sm:text-2xl font-bold tracking-tight text-gray-100 hover:text-blue-400 transition">
                     ${w.title}
                   </h3>
                   ${statusPill}
@@ -219,36 +270,23 @@ class SendaApp {
               ${adminButtons}
             </div>
 
-            <div class="markdown-body text-gray-300 text-sm sm:text-base prose prose-invert max-w-none">
+            <div class="${contentClass}">
               ${marked.parse(w.content)}
+              ${fadeOverlay}
             </div>
 
-            <!-- Tags -->
-            <div class="flex flex-wrap gap-2 mt-2">
+            <div class="flex flex-wrap gap-2 mt-auto pt-2">
               ${tagsHTML}
             </div>
+            
+            ${readMoreBtn}
           </div>
 
-          <!-- Comments Feed Section -->
-          <div class="bg-gray-950/20 p-6 sm:p-8 flex flex-col gap-5">
-            <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-1">
-              <i class="fa-regular fa-comments text-blue-500"></i>
-              Comentarios y Valoraciones
-            </h4>
-
-            <div id="comments-list-${w.id}" class="flex flex-col gap-4">
-              <!-- Dynamically loaded comments -->
-              <button onclick="app.loadComments(${w.id})" class="text-xs text-blue-400 hover:text-blue-300 transition text-left self-start flex items-center gap-1.5">
-                <i class="fa-solid fa-arrow-down-short-wide"></i> Mostrar comentarios...
-              </button>
-            </div>
-
-            <!-- Add Comment Form -->
-            ${this.renderCommentForm(w.id)}
-          </div>
+          ${commentsBlock}
         </article>
       `;
     }).join('');
+  }
   }
 
   // Comments logic
@@ -459,7 +497,11 @@ class SendaApp {
 
   async editWriting(id) {
     try {
-      const response = await fetch(`${this.apiBase}/writings/${id}`);
+      const headers = {};
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+      const response = await fetch(`${this.apiBase}/writings/${id}`, { headers });
       if (!response.ok) throw new Error();
       
       const w = await response.json();
@@ -477,6 +519,46 @@ class SendaApp {
       document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
     } catch {
       alert('Error al cargar el escrito para editar');
+    }
+  }
+
+  async viewSingleWriting(id) {
+    try {
+      const headers = {};
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+      const response = await fetch(`${this.apiBase}/writings/${id}`, { headers });
+      if (!response.ok) {
+        if (response.status === 403) {
+          alert('No tiene permisos para ver este escrito.');
+        } else {
+          alert('Error al cargar el escrito.');
+        }
+        return;
+      }
+      const w = await response.json();
+      
+      // Render only this writing in the feed container with a back button
+      const feedTitle = document.getElementById('feed-title');
+      
+      feedTitle.innerHTML = `
+        <div class="flex items-center gap-2">
+          <button onclick="app.fetchWritings()" class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 hover:text-gray-200 transition">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Volver al listado
+          </button>
+          <span>Detalle de Escrito</span>
+        </div>
+      `;
+      
+      this.renderFeed([w]);
+      // Auto load comments for this writing
+      this.loadComments(w.id);
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      alert('Error al cargar el escrito: ' + err.message);
     }
   }
 
