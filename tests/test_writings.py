@@ -44,13 +44,22 @@ def fixture_client(db_session):
     yield TestClient(app)
     del app.dependency_overrides[get_db]
 
-def test_create_writing(client):
+@pytest.fixture(name="admin_headers")
+def fixture_admin_headers(client):
+    response = client.post(
+        "/api/v1/auth/developer-login",
+        json={"email": "writer@example.com", "role": "admin"}
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+def test_create_writing(client, admin_headers):
     payload = {
         "title": "Poema de Invierno",
         "content": "El frio susurra en la noche...",
         "status": "borrador"
     }
-    response = client.post("/api/v1/writings/", json=payload)
+    response = client.post("/api/v1/writings/", json=payload, headers=admin_headers)
     assert response.status_code == 201
     data = response.json()
     assert data["title"] == payload["title"]
@@ -58,17 +67,15 @@ def test_create_writing(client):
     assert data["status"] == "borrador"
     assert "id" in data
 
-def test_get_writing(client):
-    # First create one
+def test_get_writing(client, admin_headers):
     payload = {
         "title": "Canto de Otono",
         "content": "Hojas amarillas que caen...",
         "status": "publicado"
     }
-    create_res = client.post("/api/v1/writings/", json=payload)
+    create_res = client.post("/api/v1/writings/", json=payload, headers=admin_headers)
     writing_id = create_res.json()["id"]
 
-    # Get it
     response = client.get(f"/api/v1/writings/{writing_id}")
     assert response.status_code == 200
     data = response.json()
@@ -79,65 +86,57 @@ def test_get_writing_not_found(client):
     assert response.status_code == 404
     assert "no existe" in response.json()["detail"]
 
-def test_update_writing(client):
-    # First create
+def test_update_writing(client, admin_headers):
     create_res = client.post(
         "/api/v1/writings/",
-        json={"title": "Original", "content": "Original Content", "status": "borrador"}
+        json={"title": "Original", "content": "Original Content", "status": "borrador"},
+        headers=admin_headers
     )
     writing_id = create_res.json()["id"]
 
-    # Update
     update_payload = {
         "title": "Modificado",
         "content": "Modificado Content",
         "status": "publicado"
     }
-    response = client.put(f"/api/v1/writings/{writing_id}", json=update_payload)
+    response = client.put(f"/api/v1/writings/{writing_id}", json=update_payload, headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "Modificado"
     assert data["status"] == "publicado"
 
-def test_delete_writing(client):
-    # First create
+def test_delete_writing(client, admin_headers):
     create_res = client.post(
         "/api/v1/writings/",
-        json={"title": "To Delete", "content": "Delete this", "status": "borrador"}
+        json={"title": "To Delete", "content": "Delete this", "status": "borrador"},
+        headers=admin_headers
     )
     writing_id = create_res.json()["id"]
 
-    # Delete
-    response = client.delete(f"/api/v1/writings/{writing_id}")
+    response = client.delete(f"/api/v1/writings/{writing_id}", headers=admin_headers)
     assert response.status_code == 204
 
-    # Verify not found
     response_get = client.get(f"/api/v1/writings/{writing_id}")
     assert response_get.status_code == 404
 
-def test_list_writings_and_feed(client):
-    # Create two writings: one draft, one published
-    client.post("/api/v1/writings/", json={"title": "Borrador 1", "content": "...", "status": "borrador"})
-    client.post("/api/v1/writings/", json={"title": "Publicado 1", "content": "...", "status": "publicado"})
+def test_list_writings_and_feed(client, admin_headers):
+    client.post("/api/v1/writings/", json={"title": "Borrador 1", "content": "...", "status": "borrador"}, headers=admin_headers)
+    client.post("/api/v1/writings/", json={"title": "Publicado 1", "content": "...", "status": "publicado"}, headers=admin_headers)
 
-    # List all
-    res_all = client.get("/api/v1/writings/")
+    res_all = client.get("/api/v1/writings/", headers=admin_headers)
     assert res_all.status_code == 200
     assert len(res_all.json()) == 2
 
-    # List only published
     res_pub = client.get("/api/v1/writings/?status=publicado")
     assert res_pub.status_code == 200
     assert len(res_pub.json()) == 1
     assert res_pub.json()[0]["title"] == "Publicado 1"
 
-def test_search_writings(client):
-    # Create writings
-    client.post("/api/v1/writings/", json={"title": "Cazador de Estrellas", "content": "...", "status": "publicado"})
-    client.post("/api/v1/writings/", json={"title": "Ensayo sobre la Ceguera", "content": "...", "status": "publicado"})
-    client.post("/api/v1/writings/", json={"title": "Borrador Secreto", "content": "Cazador...", "status": "borrador"})
+def test_search_writings(client, admin_headers):
+    client.post("/api/v1/writings/", json={"title": "Cazador de Estrellas", "content": "...", "status": "publicado"}, headers=admin_headers)
+    client.post("/api/v1/writings/", json={"title": "Ensayo sobre la Ceguera", "content": "...", "status": "publicado"}, headers=admin_headers)
+    client.post("/api/v1/writings/", json={"title": "Borrador Secreto", "content": "Cazador...", "status": "borrador"}, headers=admin_headers)
 
-    # Search for "Cazador" (should only return the published one)
     response = client.get("/api/v1/writings/search?q=Cazador")
     assert response.status_code == 200
     data = response.json()
