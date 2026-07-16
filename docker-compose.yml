@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+      - DATABASE_URL=sqlite:////app/data/senda.db
+      - JWT_SECRET=change-this-in-production-very-secret
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/auth/callback
+      - ADMIN_EMAIL=writer@example.com
+    volumes:
+      - senda-data:/app/data
+
+volumes:
+  senda-data:
