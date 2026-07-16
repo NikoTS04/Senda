@@ -1,6 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.infrastructure.config import settings
+from app.infrastructure.database.session import Base, engine
+from app.infrastructure.database.models import EscritoDB  # Import models to register metadata
+from app.infrastructure.api.routers import writings
+
+# Initialize database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Senda API",
@@ -20,3 +26,6 @@ app.add_middleware(
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "environment": settings.ENV}
+
+# Include API routers
+app.include_router(writings.router, prefix="/api/v1")
