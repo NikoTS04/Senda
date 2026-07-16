@@ -36,6 +36,7 @@ class SqliteEscritoRepository(IEscritoRepository):
             db_escrito.title = escrito.title
             db_escrito.content = escrito.content
             db_escrito.status = escrito.status
+            db_escrito.tags = ",".join(escrito.tags) if escrito.tags else None
             db_escrito.updated_at = escrito.updated_at
         
         self.db.commit()
@@ -49,14 +50,16 @@ class SqliteEscritoRepository(IEscritoRepository):
             self.db.commit()
 
     def search(self, query: str, limit: int = 10, offset: int = 0) -> list[Escrito]:
-        # Simple text search on title or content
         search_query = f"%{query}%"
-        # Search published items by default
         db_escritos = (
             self.db.query(EscritoDB)
             .filter(
                 (EscritoDB.status == "publicado") &
-                ((EscritoDB.title.like(search_query)) | (EscritoDB.content.like(search_query)))
+                (
+                    (EscritoDB.title.like(search_query)) |
+                    (EscritoDB.content.like(search_query)) |
+                    (EscritoDB.tags.like(search_query))
+                )
             )
             .order_by(EscritoDB.created_at.desc())
             .offset(offset)

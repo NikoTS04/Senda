@@ -32,7 +32,8 @@ def create_writing(
         escrito = use_case.execute(
             title=payload.title,
             content=payload.content,
-            status=payload.status
+            status=payload.status,
+            tags=payload.tags
         )
         return escrito
     except Exception as e:
@@ -98,7 +99,8 @@ def update_writing(
             id=writing_id,
             title=payload.title,
             content=payload.content,
-            status=payload.status
+            status=payload.status,
+            tags=payload.tags
         )
     except EscritoNoEncontradoException as e:
         raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(e))
