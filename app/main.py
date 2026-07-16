@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.infrastructure.config import settings
 from app.infrastructure.database.session import Base, engine
-from app.infrastructure.database.models import EscritoDB  # Import models to register metadata
-from app.infrastructure.api.routers import writings
+from app.infrastructure.database.models import EscritoDB, UsuarioDB  # Import models to register metadata
+from app.infrastructure.api.routers import writings, auth
 
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
@@ -29,3 +29,4 @@ def health_check():
 
 # Include API routers
 app.include_router(writings.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
